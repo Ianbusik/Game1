@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #00203a;
+      --g: #24e4f2;
+    }
+    * { box-sizing: border-box; }
+    html,body { height:100%; margin:0; padding:0; }
+    body {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      font-family:'Plus Jakarta Sans', sans-serif;
+      background:var(--bg);
+      color:var(--g);
+      overflow:hidden;
+    }
+    #cursor {
+      pointer-events:none;
+      width:3vmin;
+      height:3vmin;
+      border:2px solid var(--g);
+      border-radius:50%;
+      position:fixed;
+      transform:translate(-50%,-50%);
+      transition:transform 0.1s linear;
+      z-index:10;
+    }
+    header {
+      width:100%;
+      max-width:100vmin;
+      display:flex;
+      justify-content:flex-end;
+      margin-bottom:1rem;
+    }
+    #inner {
+      position:relative;
+      padding:0.5rem 1rem;
+      border:2px solid var(--g);
+    }
+    #inner::before {
+      content:attr(data-completion);
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      background:var(--g);
+      color:var(--bg);
+      padding:0 0.5rem;
+      font-weight:bold;
+    }
+    #wrap {
+      display:grid;
+      grid-template-columns:repeat(14,1fr);
+      grid-template-rows:repeat(8,1fr);
+      width:100vmin;
+      max-width:90vw;
+      gap:2px;
+    }
+    .num {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:6vmin;
+      font-size:2vmin;
+      cursor:pointer;
+      user-select:none;
+    }
+    #lower {
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      grid-template-rows:repeat(2,1fr);
+      gap:0.5rem;
+      width:100vmin;
+      max-width:90vw;
+      margin-top:1rem;
+    }
+    .box {
+      border:2px solid var(--g);
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:7vmin;
+      font-size:2vmin;
+    }
+    .box.loaded::before {
+      content:attr(data-percent) '%';
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--g);
+      color:var(--bg);
+    }
+    #waffleparty {
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.85);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--g);
+      font-size:5vmin;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 0.5s;
+    }
+    body.waffleparty #waffleparty { opacity:1; }
+    @media (max-width:600px) {
+      #wrap {
+        width:95vw;
+        max-width:95vw;
+        grid-template-columns:repeat(8,1fr);
+        grid-template-rows:repeat(14,1fr);
+      }
+      #lower {
+        width:95vw;
+        max-width:95vw;
+      }
+      .box {
+        font-size:3vw;
+        height:8vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="cursor"></div>
+  <header>
+    <div id="inner" data-completion="0%">
+      <img src="https://assets.codepen.io/383755/lumon.svg" alt="Lumon logo" style="height:5vmin;">
+    </div>
+  </header>
+  <div id="wrap"></div>
+  <div id="lower">
+    <div class="box valid"></div>
+    <div class="box valid"></div>
+    <div class="box valid"></div>
+    <div class="box valid"></div>
+    <div class="box valid"></div>
+    <div class="box ready valid"></div>
+    <div class="box ready valid"></div>
+    <div class="box ready valid"></div>
+    <div class="box ready valid"></div>
+    <div class="box ready valid"></div>
+  </div>
+  <div id="waffleparty">Waffle Party!</div>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/Flip.min.js"></script>
+  <script>
+    let mouse = {x:0,y:0};
+    const cursor = document.getElementById('cursor');
+    document.addEventListener('mousemove', e => {
+      mouse = {x:e.pageX, y:e.pageY};
+      cursor.style.transform = `translate(${mouse.x}px, ${mouse.y}px)`;
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const wrap = document.getElementById('wrap');
+      const boxes = document.querySelectorAll('.box.ready');
+      const inner = document.getElementById('inner');
+      let totalCompletion = 0;
+
+      for(let i=0;i<112;i++) {
+        const num = document.createElement('div');
+        num.className='num';
+        const innerDiv=document.createElement('div');
+        innerDiv.className='inner';
+        innerDiv.textContent=Math.floor(Math.random()*10);
+        num.appendChild(innerDiv);
+        wrap.appendChild(num);
+        num.addEventListener('click', ()=>handleClick(num, innerDiv));
+      }
+
+      boxes.forEach(box=>{
+        const val=Math.floor(Math.random()*26)+30;
+        box.dataset.percent=val;
+      });
+
+      function handleClick(num, innerDiv){
+        const valBoxes=Array.from(document.querySelectorAll('.box.ready.valid'));
+        if(!valBoxes.length) return;
+        const upper=valBoxes[Math.floor(Math.random()*5)];
+        const lower=valBoxes[Math.floor(Math.random()*5)+5];
+        const val=Number(lower.dataset.percent||0);
+        const add=Math.floor(Math.random()*15)+1;
+        const newVal=Math.min(val+add,100);
+        lower.dataset.percent=newVal;
+        lower.classList.add('loaded');
+        if(newVal>=100){
+          upper.classList.remove('valid');
+          lower.classList.remove('valid');
+        }
+        totalCompletion=Array.from(document.querySelectorAll('.box.ready')).reduce((t,b)=>t+Number(b.dataset.percent||0),0);
+        inner.dataset.completion=Math.trunc(totalCompletion/5)+'%';
+        if(totalCompletion/5>=100){
+          document.body.classList.add('waffleparty');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
